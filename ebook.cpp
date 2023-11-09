@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <numeric>
+#include <execution>
 
 using namespace std;
 
@@ -22,7 +23,7 @@ private:
     vector<unsigned int> user_count_ = vector<unsigned int>(max_pages);
 };
 
-void BookStatistics::SetUserProgress(const unsigned int user, const unsigned int page) {
+inline void BookStatistics::SetUserProgress(const unsigned int user, const unsigned int page) {
     unsigned int previous_pages = user_pages_[user];
     if (previous_pages != 0) {
         --user_count_[previous_pages];
@@ -33,14 +34,42 @@ void BookStatistics::SetUserProgress(const unsigned int user, const unsigned int
     }
 }
 
-float BookStatistics::GetUserCheer(const unsigned int user) const {
+inline float BookStatistics::GetUserCheer(const unsigned int user) const {
 
     unsigned int pages = user_pages_[user];
     if (pages == 0) return 0.;
-    int better = reduce(user_count_.begin() + pages, user_count_.end(), -1);
+    int better = reduce(execution::par, user_count_.begin() + pages, user_count_.end(), -1);
     if (better == 0) return 1.;
-    int worse = reduce(user_count_.begin() + 1, user_count_.begin() + pages, 0);
+    int worse = reduce(execution::par, user_count_.begin() + 1, user_count_.begin() + pages, 0);
     return static_cast<float>(worse) / static_cast<float>(worse + better);
+}
+
+enum class RequestType {
+    UNKNOWN,
+    READ,
+    CHEER
+};
+
+struct Request {
+    RequestType type;
+    unsigned int user;
+    unsigned int page;
+};
+
+Request ReadRequest(istream& in_stream = cin) {
+    string s;
+    in_stream >> s;
+    if (s == "READ") {
+        unsigned int user;
+        unsigned int page;
+        in_stream >> user >> page;
+        return {RequestType::READ, user, page};
+    } else if (s == "CHEER") {
+        unsigned int user;
+        in_stream >> user;
+        return {RequestType::CHEER, user, 0};
+    }
+    return {};
 }
 
 void ProcessRequests(istream& in_stream = cin, ostream& out_stream = cout) {
@@ -48,18 +77,17 @@ void ProcessRequests(istream& in_stream = cin, ostream& out_stream = cout) {
     unsigned int request_qty;
     in_stream >> request_qty;
     for (unsigned int i = 0; i < request_qty; ++i) {
-        string s;
-        in_stream >> s;
-        if (s == "READ") {
-            unsigned int user;
-            unsigned int page;
-            in_stream >> user >> page;
-            stat.SetUserProgress(user, page);
-        } else if (s == "CHEER") {
-            unsigned int user;
-            in_stream >> user;
+        Request request = ReadRequest(in_stream);
+        switch (request.type) {
+            
+        case RequestType::READ :
+            stat.SetUserProgress(request.user, request.page);
+            break;
+        
+        case RequestType::CHEER :
             out_stream << setprecision(6);
-            out_stream << stat.GetUserCheer(user) << endl;
+            out_stream << stat.GetUserCheer(request.user) << endl;
+            break;
         }
     }
 }
