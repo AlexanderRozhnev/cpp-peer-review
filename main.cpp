@@ -49,9 +49,6 @@ class DomainChecker {
 public:
     // Конструктор принимает список запрещённых доменов через пару итераторов
     DomainChecker(InputIt begin, InputIt end) : forbidden_domains_{begin, end} {
-        // for (InputIt it = begin; it != end; ++it) {
-        //     forbidden_domains_.emplace_back(*it);
-        // }
 
         sort(forbidden_domains_.begin(), forbidden_domains_.end(), 
             [](const Domain& left, const Domain& right){
