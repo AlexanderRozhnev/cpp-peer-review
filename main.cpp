@@ -48,32 +48,32 @@ template <typename InputIt>
 class DomainChecker {
 public:
     // Конструктор принимает список запрещённых доменов через пару итераторов
-    DomainChecker(InputIt begin, InputIt end) {
-        for (InputIt it = begin; it != end; ++it) {
-            domains_.emplace_back(*it);
-        }
+    DomainChecker(InputIt begin, InputIt end) : forbidden_domains_{begin, end} {
+        // for (InputIt it = begin; it != end; ++it) {
+        //     forbidden_domains_.emplace_back(*it);
+        // }
 
-        sort(domains_.begin(), domains_.end(), 
+        sort(forbidden_domains_.begin(), forbidden_domains_.end(), 
             [](const Domain& left, const Domain& right){
                 return lexicographical_compare(left.GetRaw().begin(), left.GetRaw().end(), 
                                                right.GetRaw().begin(), right.GetRaw().end());
             });
         
-        auto last = unique(domains_.begin(), domains_.end(), 
+        auto last = unique(forbidden_domains_.begin(), forbidden_domains_.end(), 
             [](const Domain& left, const Domain& right){
                 return left.IsSubdomain(right);
             });
-        domains_.erase(last, domains_.end());
+        forbidden_domains_.erase(last, forbidden_domains_.end());
     }
 
     // Метод IsForbidden, возвращает true, если домен запрещён
     bool IsForbidden(Domain domain) const {
 
-        auto upper = upper_bound(domains_.begin(), domains_.end(), domain, 
+        auto upper = upper_bound(forbidden_domains_.begin(), forbidden_domains_.end(), domain, 
                         [](const Domain& left, const Domain& right){
                             return left.GetRaw() < right.GetRaw();
                         });
-        if (upper != domains_.begin()) {
+        if (upper != forbidden_domains_.begin()) {
             upper = prev(upper);
             return ((domain == *upper) || (*upper).IsSubdomain(domain));
         }
@@ -82,7 +82,7 @@ public:
     }
 
 private:
-    vector<Domain> domains_;
+    vector<Domain> forbidden_domains_;
 };
 
 const vector<Domain> ReadDomains(istream& input, int num) {
@@ -158,7 +158,7 @@ com
                  test_domains.cbegin()));
 }
 
-void TestDomainChekerClass() {
+void TestDomainCheckerClass() {
     const vector<Domain> forbidden_domains{"gdz.ru"s,
                                            "maps.me"s,
                                            "m.gdz.ru"s,
@@ -250,7 +250,7 @@ void TestBenchmark() {
 void Test() {
     TestDomainClass();
     TestReadDomains();
-    TestDomainChekerClass();
+    TestDomainCheckerClass();
     TestBenchmark();
     cout << "Tests passed. Ready to read from input." << endl << endl;
 }
