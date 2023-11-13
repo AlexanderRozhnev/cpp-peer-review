@@ -14,7 +14,10 @@ using namespace std;
 class Domain {
 public:
     // Конструктор позволяет конструирование из string
-    Domain(const string& domain) : domain_(domain.rbegin(), domain.rend()) {
+    Domain(const string& domain) : domain_([&domain]{ 
+                                            string result{domain.rbegin(), domain.rend()};
+                                            result.push_back('.');
+                                            return result; }()) {
     }
 
     bool operator== (const Domain& other) const {
@@ -24,8 +27,8 @@ public:
     // Метод IsSubdomain, принимающий другой домен и возвращающий true, если this его поддомен
     bool IsSubdomain(Domain domain) const {
         size_t size = domain_.size();
-        if (size < domain.domain_.size()) {
-            return ((domain_ + '.') == domain.domain_.substr(0, size + 1));
+        if (size <= domain.domain_.size()) {
+            return domain_ == domain.domain_.substr(0, size);
         }
         return false;
     }
@@ -33,11 +36,6 @@ public:
     // Возращает строку с доменом во внутреннем формате хранения (реверсивная строка)
     string_view GetRaw() const {
         return {domain_};
-    }
-
-    // Возвращает строку с доменом в нормальном формате
-    string Get() const {
-        return {domain_.rbegin(), domain_.rend()};
     }
 
 private:
@@ -72,7 +70,8 @@ public:
                         });
         if (upper != forbidden_domains_.begin()) {
             upper = prev(upper);
-            return ((domain == *upper) || (*upper).IsSubdomain(domain));
+            //return ((domain == *upper) || (*upper).IsSubdomain(domain));
+            return (*upper).IsSubdomain(domain);
         }
 
         return false;
@@ -108,26 +107,29 @@ namespace test {
 
 void TestDomainClass() {
     {
-        const string test_domain{"com"s};
+        string test_domain{".com"s};
+        reverse(test_domain.begin(), test_domain.end());
         Domain domain{"com"s};
-        assert(test_domain == domain.Get());
+        assert(test_domain == domain.GetRaw());
     }
     {
-        const string test_domain{"maps.me"s};
+        string test_domain{".maps.me"s};
+        reverse(test_domain.begin(), test_domain.end());
         Domain domain{"maps.me"s};
-        assert(test_domain == domain.Get());
+        assert(test_domain == domain.GetRaw());
     }
     {
-        const string test_domain{"a.b.c.m.gdz.ru"s};
+        string test_domain{".a.b.c.m.gdz.ru"s};
+        reverse(test_domain.begin(), test_domain.end());
         Domain domain{"a.b.c.m.gdz.ru"s};
-        assert(test_domain == domain.Get());
+        assert(test_domain == domain.GetRaw());
     }
 
     {
         Domain domain{"com"s};
         assert(domain.IsSubdomain(Domain{"yandex.com"s}));
         assert(domain.IsSubdomain(Domain{"agr4.yandex.com"s}));
-        assert(!domain.IsSubdomain(Domain{"com"s}));
+        assert(domain.IsSubdomain(Domain{"com"s}));
         assert(!domain.IsSubdomain(Domain{"com.ru"s}));
         assert(!domain.IsSubdomain(Domain{"agr4.com.ru"s}));
     }
