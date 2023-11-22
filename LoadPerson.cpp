@@ -81,22 +81,21 @@ optional<DBHandler> GetDB(const DBParams& db_params) {
 }
 
 /*  Функция получет данные о пользователях через сформированный ей SQL запрос
-    с заданнми фильтрами: min_age, max_age, name_filter (фильтр по именам) */
+    с заданными фильтрами: min_age, max_age, name_filter (фильтр по именам) */
 /*  Пример вызова функции:
-    vector<Person> persons = LoadPersons(18, 65, "A%",  DBParamsBuilder().
-                                                        SetDBName(db_name).
-                                                        SetDBConnectionTimeout(db_connection_timeout).
-                                                        SetDBAllowExceptions(db_allow_exceptions).
-                                                        SetDBLogLevel(db_log_level));
-*/
-vector<Person> LoadPersons(int min_age, int max_age, string_view name_filter, const DBParams& db_params) {
 
     DBHandler db;
-    if (auto get_db = GetDB(db_params)) {
-        db = *get_db;
-    } else {
-        return {};
+    if (auto get_db = GetDB(DBParamsBuilder().
+                            SetDBName(db_name).
+                            SetDBConnectionTimeout(db_connection_timeout).
+                            SetDBAllowExceptions(db_allow_exceptions).
+                            SetDBLogLevel(db_log_level))) {
+
+        vector<Person> persons = LoadPersons(18, 65, "A%", *get_db);
     }
+
+*/
+vector<Person> LoadPersons(int min_age, int max_age, string_view name_filter, const DBHandler& db) {
 
     ostringstream query_str;
     query_str << "from Persons "s
